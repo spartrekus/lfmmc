@@ -1,8 +1,11 @@
 
+///////////
+// LFMMC  
+///////////
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <termios.h>
@@ -439,7 +442,9 @@ void readfilesp( char *filesource, int linestart , int lineend )
 int main( int argc, char *argv[])
 {
   char string[STMAX];
+  char strpath[STMAX];
   char cwd[STMAX];
+  FILE *fptt;
   strncpy( file_filter[1], "", PATH_MAX );
   strncpy( file_filter[2], "", PATH_MAX );
 
@@ -616,22 +621,36 @@ int main( int argc, char *argv[])
            else if ( ch == 'd')      nexp_user_scrolly[pansel]+=4;
            else if ( ch == 'n')      nexp_user_scrolly[pansel]+=4;
 
+      // quick pan view embedded reader
+      else if ( ch == 'p') 
+      {
+            readfilesp( nexp_user_fileselection , 0 , rows-4 );
+            getchar();
+      }
 
+      // pager
+      else if (  ch == 'r' )  
+        nrunwith(  " less     ",  nexp_user_fileselection    ); 
 
       else if (  ch == 'e' ) {  enable_waiting_for_enter();  nsystem(  " lkmmc    " );   } //explorer
-      else if (  ch == 'r' )  nrunwith(  " less     ",  nexp_user_fileselection    ); 
       else if (  ch == 't' )  nrunwith(  " lkview   ",  nexp_user_fileselection    ); 
       else if ( ch == 'v' )   
       {  enable_waiting_for_enter();  nrunwith(  " vim  ",  nexp_user_fileselection    );   }
 
-     else if ( ch == '?' )   
-     {  
-         printf( "LFMMC\n" );
-         getchar();
-     }
 
-     else if ( ch == 5 )   //ctrl+e
-     {
+
+      else if ( ch == '?' )   
+      {  
+         printf( "==========\n" );
+         printf( "LFMMC\n" );
+         printf( "==========\n" );
+         printf( "<Press Key>\n" );
+         disable_waiting_for_enter();   
+         getchar();
+      }
+
+      else if ( ch == 5 )   //ctrl+e
+      {
          printf( "lkmmc\n" );
          enable_waiting_for_enter();   
          nsystem(  " lkmmc  " );
@@ -655,12 +674,6 @@ int main( int argc, char *argv[])
          if ( show_title == 1 ) show_title = 0; else show_title = 1;
       }
 
-      // quick pan view
-      else if ( ch == 'p') 
-      {
-            readfilesp( nexp_user_fileselection , 0 , rows-4 );
-            getchar();
-      }
 
       else if ( ch == '~')      
       {
@@ -673,9 +686,10 @@ int main( int argc, char *argv[])
       {
             //chdir( pathpan[ pansel ] );
             chdir( ".." );
-            nexp_user_sel[pansel]=1; nexp_user_scrolly[pansel] = 0; 
+            nexp_user_sel[pansel]=1;  
+            nexp_user_scrolly[pansel] = 0; 
             //strncpy( pathpan[ pansel ] , getcwd( cwd, PATH_MAX ), PATH_MAX );
-            strncpy( file_filter[pansel]  , "" , PATH_MAX );
+            //strncpy( file_filter[pansel]  , "" , PATH_MAX );
        }
        else if ( ch == 'l')      
        {
@@ -684,11 +698,11 @@ int main( int argc, char *argv[])
             //strncpy( pathclipboard , getcwd( string, PATH_MAX ), PATH_MAX );
             //selclipboard =      nexp_user_sel[pansel];
             //scrollyclipboard =  nexp_user_scrolly[pansel];
-
             // go 
             //chdir( pathpan[ pansel ] );
             chdir( nexp_user_fileselection );
-            nexp_user_sel[pansel]=1; nexp_user_scrolly[pansel] = 0; 
+            nexp_user_sel[pansel]=1; 
+            nexp_user_scrolly[pansel] = 0; 
             //strncpy( pathpan[ pansel ] , getcwd( cwd, PATH_MAX ), PATH_MAX );
             //strncpy( file_filter[pansel]  , "" , PATH_MAX );
        }
@@ -706,13 +720,16 @@ int main( int argc, char *argv[])
          else if ( ch == 'l' )   sx1++;
       }
 
-
+      // Nothing before here
+      /// here shall be if
       if ( ( ch == 's' ) || ( ch == 'w' ) )
       {
          if      ( show_dir == 0 ) show_dir = 1;
          else if ( show_dir == 1 ) show_dir = 2; 
          else if ( show_dir == 2 ) show_dir = 0; 
       }
+
+      else if ( ch == 'i' )   show_dir = 2;
 
       else if ( ch == 'x' ) 
       {
@@ -751,7 +768,6 @@ int main( int argc, char *argv[])
             ch = 0;
       }
 
-      //else if ( ch == 'i' ) show_dir = 2;
 
       else if ( ch == '$' ) 
       {
@@ -766,14 +782,17 @@ int main( int argc, char *argv[])
             nrunwith( userstr ,  nexp_user_fileselection    ); 
       }
 
+
       else if ( ch == 10 ) 
       {
             if ( strcmp( fextension( nexp_user_fileselection ) ,       "png" ) == 0 )
                nrunwith( " export DISPLAY=:0 ; feh  " , nexp_user_fileselection );
             else if ( strcmp( fextension( nexp_user_fileselection ) , "jpg" ) == 0 )
                nrunwith( " export DISPLAY=:0 ; feh  " , nexp_user_fileselection );
+
             else if ( strcmp( fextension( nexp_user_fileselection ) , "pdf" ) == 0 )
                nrunwith( "   export DISPLAY=:0 ; mupdf " , nexp_user_fileselection );
+
             else if ( strcmp( fextension( nexp_user_fileselection ) , "wmv" ) == 0 )
                nrunwith( " export DISPLAY=:0 ; mplayer  " , nexp_user_fileselection );
             else if ( strcmp( fextension( nexp_user_fileselection ) , "avi" ) == 0 )
@@ -784,7 +803,6 @@ int main( int argc, char *argv[])
                nrunwith( "   export DISPLAY=:0 ; mplayer " , nexp_user_fileselection );
       }
 
-
       else if ( ch == 'f' ) 
       {
             gotoyx( sy2 , 0 );  
@@ -793,6 +811,22 @@ int main( int argc, char *argv[])
             strncpy( file_filter[1] ,  userstr, PATH_MAX );
             nexp_user_sel[pansel]=1; nexp_user_scrolly[pansel] = 0;
       }
+
+      else if ( ch == 'y' )
+      {
+         //stringline( argv[ 1 ] , user_line_sel );
+         //nrunwith(  " less     ",  nexp_user_fileselection    ); 
+         // copy a line to clipboard
+         strncpy( strpath , getcwd( cwd, PATH_MAX ), PATH_MAX );
+         chdir( getenv( "HOME" ) );
+         fptt = fopen( ".clipboard", "wb+" );
+         fputs( nexp_user_fileselection , fptt );
+         fputs( "\n" , fptt );
+         fclose( fptt );
+         chdir( strpath );
+         printf( "Copying to clipboard the selection.\n" );
+       }
+
 
       else if ( ch == ':' ) 
       {
@@ -812,7 +846,6 @@ int main( int argc, char *argv[])
             printf( "  6: 6 sec\n" );
             ch = getchar();
             if ( ch == '1' )       autorefresh = 1;
-            else if ( ch == 'y' )  autorefresh = 1;
             else if ( ch == '2' )  autorefresh = 2;
             else if ( ch == '6' )  autorefresh = 6;
          }
