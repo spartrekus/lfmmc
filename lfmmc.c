@@ -3,6 +3,20 @@
 // LFMMC  
 ///////////
 
+#if defined(__linux__) //linux
+#define MYOS 1
+#elif defined(_WIN32)
+#define MYOS 2
+#elif defined(_WIN64)
+#define MYOS 3
+#elif defined(__unix__) 
+#define MYOS 4  // freebsd
+#define PATH_MAX 2500
+#else
+#define MYOS 0
+#endif
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,7 +27,9 @@
 #include <unistd.h>  
 #include <time.h>
 
-#define PATH_MAX 2500
+
+
+///#define PATH_MAX 2500
 #define STMAX 2040
 
 #define ESC "\033"
@@ -52,6 +68,43 @@
 #define nonvisible_cursor() printf(ESC "[?251");
 #define resetcolor() printf(ESC "[0m")
 #define set_display_atrib(color) 	printf(ESC "[%dm",color)
+
+
+int file_exist(char *tfilename)
+{
+ if( access( tfilename , F_OK ) != -1 ) {
+     // file exists
+     return 1;
+ } else {
+     // file doesn't exist
+     return 0;
+ }
+}
+
+/*
+ if( access( fname, F_OK ) != -1 ) {
+     // file exists
+ } else {
+     // file doesn't exist
+ }
+
+
+   Use stat like this:
+
+ int file_exist (char *filename)
+ {
+   struct stat   buffer;  
+   return (stat (filename, &buffer) == 0);
+ }
+
+   and call it like this:
+
+ if (file_exist ("myfile.txt"))
+ {
+   printf ("It exists\n");
+ }
+*/
+
 
 
 int sx1, sx2, sy1, sy2 ;
@@ -97,6 +150,9 @@ char *fextension(char *str)
     char *r = malloc( sizeof ptrout );
     return r ? memcpy(r, ptrout, siz ) : NULL;
 }
+
+
+
 
 
 
@@ -582,7 +638,9 @@ int main( int argc, char *argv[])
        ch = 0; 
        if      ( autorefresh == 1 ) usleep( 20      * 10000 );
        else if ( autorefresh == 2 ) usleep(   10 * 20 * 10000 );     // 2sec
-       else if ( autorefresh == 6 ) usleep( 3 * 10 * 20 * 10000 );   // 6sec
+       else if ( autorefresh == 6 ) usleep( 6/2  * 10 * 20 * 10000 );   // 6sec
+       else if ( autorefresh == 8 ) usleep( 8/2  * 10 * 20 * 10000 );  
+       else if ( autorefresh == 9 ) usleep( 9/2  * 10 * 20 * 10000 );  
      }
      else
          ch = getchar();
@@ -630,7 +688,34 @@ int main( int argc, char *argv[])
 
       // pager
       else if (  ch == 'r' )  
-        nrunwith(  " less     ",  nexp_user_fileselection    ); 
+      {
+        gotoyx( sy2 , 0 );  
+        printf("Using Less %s \n", nexp_user_fileselection );
+        if (  file_exist( "/usr/local/bin/lfless" ) == 1 ) 
+           nrunwith(  " lfless     ",  nexp_user_fileselection  ); 
+        else if (  file_exist( "/usr/local/bin/lfview" ) == 1 ) 
+           nrunwith(  " lfview     ",  nexp_user_fileselection  ); 
+        else if (  file_exist( "/usr/local/bin/tless" ) == 1 ) 
+           nrunwith(  "  tless     ",  nexp_user_fileselection  ); 
+        else
+           nrunwith(  " less     ",    nexp_user_fileselection  ); 
+      }
+
+
+      else if (  ch == 'v' )  
+      {
+        gotoyx( sy2 , 0 );  
+        printf("Using vim %s \n", nexp_user_fileselection );
+        if (  file_exist( "/usr/local/bin/vim" ) == 1 ) 
+           nrunwith(  " vim   ",  nexp_user_fileselection  ); 
+        else if (  file_exist( "/usr/bin/vim" ) == 1 ) 
+           nrunwith(  " vim   ",  nexp_user_fileselection  ); 
+        else
+           nrunwith(  " vi  ",    nexp_user_fileselection  ); 
+      }
+
+
+
 
       else if (  ch == 'e' ) {  enable_waiting_for_enter();  nsystem(  " lkmmc    " );   } //explorer
       else if (  ch == 't' )  nrunwith(  " lkview   ",  nexp_user_fileselection    ); 
@@ -775,6 +860,7 @@ int main( int argc, char *argv[])
             printf("got: \"%s\"\n", userstr );
             nsystem( userstr );
       }
+
       else if ( ch == '!' ) 
       {
             strninput( "", "" );
@@ -782,6 +868,15 @@ int main( int argc, char *argv[])
             nrunwith( userstr ,  nexp_user_fileselection    ); 
       }
 
+      else if ( ch == 20 )  // ctrl+t 
+      {
+           nrunwith( " mplayer -vo fbdev:/dev/fb0 -fps 30  -vf scale=640:480  " , nexp_user_fileselection );
+      }
+
+      else if ( ch == 16 )  // ctrl+p 
+      {
+           nrunwith( " mplayer -vo fbdev:/dev/fb1 -fps 30  -vf scale=320:200  " , nexp_user_fileselection );
+      }
 
       else if ( ch == 10 ) 
       {
@@ -790,8 +885,27 @@ int main( int argc, char *argv[])
             else if ( strcmp( fextension( nexp_user_fileselection ) , "jpg" ) == 0 )
                nrunwith( " export DISPLAY=:0 ; feh  " , nexp_user_fileselection );
 
+            else if ( strcmp( fextension( nexp_user_fileselection ) , "doc" ) == 0 )
+               nrunwith( "   export DISPLAY=:0 ; libreoffice " , nexp_user_fileselection );
+            else if ( strcmp( fextension( nexp_user_fileselection ) , "docx" ) == 0 )
+               nrunwith( "   export DISPLAY=:0 ; libreoffice " , nexp_user_fileselection );
+            else if ( strcmp( fextension( nexp_user_fileselection ) , "odt" ) == 0 )
+               nrunwith( "   export DISPLAY=:0 ; libreoffice " , nexp_user_fileselection );
+            else if ( strcmp( fextension( nexp_user_fileselection ) , "xls" ) == 0 )
+               nrunwith( "   export DISPLAY=:0 ; gnumeric " , nexp_user_fileselection );
+
+
+
+            else if ( strcmp( fextension( nexp_user_fileselection ) , "ws1" ) == 0 )
+               nrunwith( "   freelotus123  " , nexp_user_fileselection );
+
+
+
             else if ( strcmp( fextension( nexp_user_fileselection ) , "pdf" ) == 0 )
                nrunwith( "   export DISPLAY=:0 ; mupdf " , nexp_user_fileselection );
+
+
+
 
             else if ( strcmp( fextension( nexp_user_fileselection ) , "wmv" ) == 0 )
                nrunwith( " export DISPLAY=:0 ; mplayer  " , nexp_user_fileselection );
@@ -844,10 +958,14 @@ int main( int argc, char *argv[])
             printf( "  Autorefresh y/n?\n" );
             printf( "  2: 2 sec\n" );
             printf( "  6: 6 sec\n" );
+            printf( "  8: 8 sec\n" );
+            printf( "  9: 9 sec\n" );
             ch = getchar();
             if ( ch == '1' )       autorefresh = 1;
             else if ( ch == '2' )  autorefresh = 2;
             else if ( ch == '6' )  autorefresh = 6;
+            else if ( ch == '8' )  autorefresh = 8;
+            else if ( ch == '9' )  autorefresh = 9;
          }
          ch = 0;
       }
